@@ -2,7 +2,7 @@
 #include "hardware/pwm.h"
 
 // GP15 — change if you use a different pin
-#define SERVO_PIN 15
+#define SERVO_PIN 16
 
 // MG996R continuous rotation servo expects:
 // 50Hz PWM = 20ms period
