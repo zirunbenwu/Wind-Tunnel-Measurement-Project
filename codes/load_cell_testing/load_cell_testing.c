@@ -3,11 +3,11 @@
 #include "pico/stdlib.h"
 #include "hardware/sync.h"
 
-#define PIN_SCK         16
-#define PIN_DT          17
+#define PIN_SCK         14
+#define PIN_DT          15
 
 #define MAX_SAMPLES     4000
-#define IIR_ALPHA       0.15f
+#define IIR_ALPHA       0.15f // 1st-order LPF; ~2 Hz cutoff at fs=80Hz; gives roughly -20 dB at 25-30 Hz
 
 static int32_t  raw_buf[MAX_SAMPLES];
 static float    filt_buf[MAX_SAMPLES];
@@ -64,38 +64,9 @@ int main(void) {
 
     while (true) {
         int n = 0;
-        int ret = scanf("%d", &n);
-        if (ret != 1) {
-            // bad/non-digit input - consume one char to avoid spinning
-            getchar_timeout_us(1000);
-            continue;
-        }
-        if (n < 0) continue;
+        if (scanf("%d", &n) != 1) continue;
+        if (n <= 0) continue;
         if (n > MAX_SAMPLES) n = MAX_SAMPLES;
-
-        if (n == 0) {
-            // streaming mode: print samples until any byte arrives on stdin
-            int32_t first = hx711_read();
-            float   filt  = (float)first;
-            absolute_time_t t_start = get_absolute_time();
-
-            printf("STREAM\n");
-            printf("%ld,%.3f,0\n", (long)first, filt);
-
-            while (true) {
-                if (getchar_timeout_us(0) != PICO_ERROR_TIMEOUT) {
-                    printf("STOP\n");
-                    break;
-                }
-                int32_t r = hx711_read();
-                filt = IIR_ALPHA * (float)r + (1.0f - IIR_ALPHA) * filt;
-                uint32_t t_ms = to_ms_since_boot(get_absolute_time())
-                              - to_ms_since_boot(t_start);
-                printf("%ld,%.3f,%lu\n",
-                       (long)r, filt, (unsigned long)t_ms);
-            }
-            continue;
-        }
 
         int32_t first = hx711_read();
         float   filt  = (float)first;
